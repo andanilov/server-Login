@@ -3,8 +3,8 @@ const tokenModel = require('../models/token-model');
 
 class TokenService {
   generatePairTokens = async (payload) => ({ // payload - data for tokens
-    accessToken: jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: '15m' }),
-    refreshToken: jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' }),
+    accessToken: jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_ALIVE }),
+    refreshToken: jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_ALIVE }),
   });
 
   async saveRefreshTokenToDB(userId, refreshToken) {

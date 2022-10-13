@@ -1,4 +1,5 @@
 const userService = require('../service/user-service');
+const cookieService = require('../service/cookie-service');
 
 class UserController {
   async registration(req, res, next) {
@@ -8,11 +9,7 @@ class UserController {
       // 2. Registrate new user by user Service
       const userData = await userService.registration(email, password);
       // 3. Save refresh token to cookie !Needed app.use(cookieParser());
-      res.cookie('refreshToken', userData.refreshToken, {
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        // secure: true, // if using https
-      });
+      cookieService.setRefreshToken(res, userData.refreshToken)
 
       return res.json(userData);
     } catch (e) {
@@ -22,9 +19,14 @@ class UserController {
 
   async activate(req, res, next) {
     try {
-      
+      // 1. Get actiovation link from request parameters
+      const activationLink = req.params.link;
+      // 2. Activate user by the link
+      userService.activate(activationLink);
+      // 3. Redirect user to client
+      return res.redirect(process.env.CLIENT_URL);
     } catch (e) {
-
+      console.log(e);
     }
   }
 

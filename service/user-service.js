@@ -15,9 +15,9 @@ class UserService {
     // 3. Generate activate link (random string by uuid)
     const actiovationLink = uuid.v4();
     // 4. Create a new user
-    const user = await UserModel.create({ email, password: hashPsswrd, name })
+    const user = await UserModel.create({ email, password: hashPsswrd, name, actiovationLink })
     // 5. Send activate link to the new user by mail-service
-    await mailService.sendActivationmail(email, actiovationLink);
+    await mailService.sendActiovationMail(email, `${process.env.API_URL}${process.env.API_ROUTE}/activate/${actiovationLink}`);
     // 6. Generate pair tokens with user dto information
     const userDto = new UserDto(user); // email, id, isActivated
     const tokens = await tokenService.generatePairTokens({ ...userDto });
@@ -25,6 +25,15 @@ class UserService {
     await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
 
     return { ...tokens, user: userDto };
+  }
+
+  async activate(actiovationLink) {
+    // 1. Check if exist user with the activationLink
+    const user = await UserModel.findOne({ actiovationLink });
+    if (!user) throw new Error('Данная ссылка не действительна!');
+    // 2. Activate user
+    user.isActivated = true;
+    return user.save();
   }
 }
 
