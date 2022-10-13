@@ -3,13 +3,14 @@ const bcrypt = require('bcrypt'); // For password hashing
 const uuid = require('uuid'); // For random string (activation link)
 const mailService = require('./mail-service');
 const tokenService = require('./token-service');
+const ApiError = require('../exceptions/api-error');
 const UserDto = require('../dtos/user-dto');
 
 class UserService {
   async registration(email, password, name = undefined) {
     // 1. Check if user allready exists
     const applicant = await UserModel.findOne({ email });
-    if (applicant) throw new Error(`Пользователь с адресом ${email} уже существует!`);
+    if (applicant) throw ApiError.BadRequest(`Пользователь с адресом ${email} уже существует!`);
     // 2. Hash password
     const hashPsswrd = await bcrypt.hash(password, +process.env.PSWD_HASH_SALT);
     // 3. Generate activate link (random string by uuid)
@@ -30,7 +31,7 @@ class UserService {
   async activate(actiovationLink) {
     // 1. Check if exist user with the activationLink
     const user = await UserModel.findOne({ actiovationLink });
-    if (!user) throw new Error('Данная ссылка не действительна!');
+    if (!user) throw ApiError.BadRequest('Данная ссылка не действительна!');
     // 2. Activate user
     user.isActivated = true;
     return user.save();

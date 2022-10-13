@@ -1,9 +1,14 @@
 const userService = require('../service/user-service');
 const cookieService = require('../service/cookie-service');
+const { validationResult } = require('express-validator');
+const ApiError = require('../exceptions/api-error');
 
 class UserController {
   async registration(req, res, next) {
     try {
+      // Validate request
+      const errorsValidate = validationResult(req);
+      if (!errorsValidate.isEmpty()) throw ApiError.BadRequest('Неверные данные', errorsValidate);
       // 1. Get request params by request body
       const { email, password } = req.body;
       // 2. Registrate new user by user Service
@@ -13,7 +18,7 @@ class UserController {
 
       return res.json(userData);
     } catch (e) {
-      console.log(e);
+      next(e);
     }
   }
 
@@ -26,7 +31,7 @@ class UserController {
       // 3. Redirect user to client
       return res.redirect(process.env.CLIENT_URL);
     } catch (e) {
-      console.log(e);
+      next(e);
     }
   }
 
@@ -34,7 +39,7 @@ class UserController {
     try {
       
     } catch (e) {
-
+      next(e);
     }
   }
 
@@ -42,7 +47,7 @@ class UserController {
     try {
       
     } catch (e) {
-
+      next(e);
     }
   }
 
@@ -50,7 +55,7 @@ class UserController {
     try {
       
     } catch (e) {
-
+      next(e);
     }
   }
 
@@ -58,7 +63,7 @@ class UserController {
     try {
       res.json(['123', '456']);
     } catch (e) {
-
+      next(e);
     }
   }
 }
