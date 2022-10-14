@@ -5,6 +5,7 @@ const mailService = require('./mail-service');
 const tokenService = require('./token-service');
 const ApiError = require('../exceptions/api-error');
 const UserDto = require('../dtos/user-dto');
+const userModel = require('../models/user-model');
 
 class UserService {
   async registration(email, password, name = undefined) {
@@ -21,9 +22,10 @@ class UserService {
     await mailService.sendActiovationMail(email, `${process.env.API_URL}${process.env.API_ROUTE}/activate/${actiovationLink}`);
     // 6. Generate pair tokens with user dto information
     const userDto = new UserDto(user); // email, id, isActivated
-    const tokens = await tokenService.generatePairTokens({ ...userDto });
-    // 7. Save refresh token to DB
-    await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
+    const tokens = await tokenService.generateAndSavePairTokens(userDto);
+    // const tokens = tokenService.generatePairTokens({ ...userDto });
+    // // 7. Save refresh token to DB
+    // await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
 
     return { ...tokens, user: userDto };
   }
@@ -46,9 +48,9 @@ class UserService {
     if (!isPassSimilar) throw ApiError.BadRequest('Пользователь не найден или данные неверные!');
     // 3. Generate pair tokens with user dto information
     const userDto = new UserDto(user); // email, id, isActivated
-    const tokens = await tokenService.generatePairTokens({ ...userDto }); 
+    const tokens = await tokenService.generateAndSavePairTokens(userDto);
     // 4. Save refresh token to DB
-    await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
+    // await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
 
     return { ...tokens, user: userDto };
   }
@@ -56,6 +58,24 @@ class UserService {
   async logout(refreshToken) {
     // Delete refresh token from DB if exists
     return await tokenService.deleteRefreshToken(refreshToken);  
+  }
+
+  async updateRefreshToken(refreshToken) {
+    if (!refreshToken) throw ApiError.UnauthorizedError();
+    // 1. Check if the refresh token exists in DB
+    const token = await tokenService.checkIfRefreshTokenExists(refreshToken);
+    // 2. Validate refresh token
+    const isTokenGood = tokenService.validateRefreshToken(refreshToken);
+    if (!token || !isTokenGood) throw ApiError.UnauthorizedError();
+    // 3. Get new data of the user and generate and save pair tokens
+    const user = await UserModel.findById(token.user);
+    const userDto = new UserDto(user); // email, id, isActivated
+    const tokens = await tokenService.generateAndSavePairTokens(userDto);
+    return { ...tokens, user: userDto };
+  }
+
+  async getAllUsers() {
+    return await userModel.find();
   }
 
 }
