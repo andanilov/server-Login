@@ -36,6 +36,28 @@ class UserService {
     user.isActivated = true;
     return user.save();
   }
+
+  async login(email, password) {
+    // 1. Check if user exist
+    const user = await UserModel.findOne({ email });
+    if (!user) throw ApiError.BadRequest('Пользователь не найден или данные неверные!');
+    // 2. Compare password
+    const isPassSimilar = await bcrypt.compare(password, user.password);
+    if (!isPassSimilar) throw ApiError.BadRequest('Пользователь не найден или данные неверные!');
+    // 3. Generate pair tokens with user dto information
+    const userDto = new UserDto(user); // email, id, isActivated
+    const tokens = await tokenService.generatePairTokens({ ...userDto }); 
+    // 4. Save refresh token to DB
+    await tokenService.saveRefreshTokenToDB(userDto.id, tokens.refreshToken);
+
+    return { ...tokens, user: userDto };
+  }
+
+  async logout(refreshToken) {
+    // Delete refresh token from DB if exists
+    return await tokenService.deleteRefreshToken(refreshToken);  
+  }
+
 }
 
 module.exports = new UserService();

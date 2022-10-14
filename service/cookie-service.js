@@ -6,6 +6,8 @@ class CookieService { // !Needed app.use(cookieParser());
     httpOnly: true,
     // secure: true, // if using https
   });
+
+  deleteRefreshToken = (res) => res.clearCookie('refreshToken');
 }
 
 module.exports = new CookieService();

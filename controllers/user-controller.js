@@ -14,8 +14,7 @@ class UserController {
       // 2. Registrate new user by user Service
       const userData = await userService.registration(email, password);
       // 3. Save refresh token to cookie !Needed app.use(cookieParser());
-      cookieService.setRefreshToken(res, userData.refreshToken)
-
+      cookieService.setRefreshToken(res, userData.refreshToken);
       return res.json(userData);
     } catch (e) {
       next(e);
@@ -37,7 +36,16 @@ class UserController {
 
   async login(req, res, next) {
     try {
-      
+      // 1. Data validate
+      const errorsValidate = validationResult(req);
+      if (!errorsValidate.isEmpty()) throw ApiError.BadRequest('Неверные данные', errorsValidate);
+      // 2. Get data from params
+      const { email, password } = req.body;
+      // 3. Login user by service
+      const userData = await userService.login(email, password);
+      // 4. Save refresh token to cookie !Needed app.use(cookieParser());
+      cookieService.setRefreshToken(res, userData.refreshToken);
+      return res.json(userData);
     } catch (e) {
       next(e);
     }
@@ -45,7 +53,13 @@ class UserController {
 
   async logout(req, res, next) {
     try {
-      
+      // 1. Get refresh token from cookie
+      const { refreshToken } = req.cookies;
+      // 2. Delete refresh token from DB by service
+      const token = await userService.logout(refreshToken);
+      // 3. Delete refresh token from cookies
+      cookieService.deleteRefreshToken(res);
+      return res.json(token);
     } catch (e) {
       next(e);
     }

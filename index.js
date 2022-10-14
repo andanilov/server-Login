@@ -13,11 +13,10 @@ const app = express();
 
 // --- Middlewares including
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser()); 
 app.use(cors());
 app.use(process.env.API_ROUTE, router); // middleware for all routes
 app.use(errorMiddleware); // error middleware should be last!
-
 
 // Starting the server with error catching
 const start = async () => {

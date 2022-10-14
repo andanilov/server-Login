@@ -20,6 +20,11 @@ class TokenService {
     return token;
   }
 
+  async deleteRefreshToken(refreshToken) {
+    // Try to delete refresh token if exists
+    return await tokenModel.deleteOne({ refreshToken });
+  }
+
 }
 
 module.exports = new TokenService();
