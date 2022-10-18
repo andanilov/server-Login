@@ -14,7 +14,7 @@ const app = express();
 // --- Middlewares including
 app.use(express.json());
 app.use(cookieParser()); 
-app.use(cors());
+app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 app.use(process.env.API_ROUTE, router); // middleware for all routes
 app.use(errorMiddleware); // error middleware should be last!
 
