@@ -5,8 +5,8 @@ module.exports = function (req, res, next) {
   try {
     // 1. Get header "Authorization" from request headers
     const authorizationHeader = req.headers?.authorization;
+    
     if (!authorizationHeader) throw ApiError.UnauthorizedError();
-
     // 2. Get access token from authorization header
     const accessToken = authorizationHeader.split(' ')[1];
     if (!accessToken) throw ApiError.UnauthorizedError();

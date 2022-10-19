@@ -5,7 +5,9 @@ const mailService = require('./mail-service');
 const tokenService = require('./token-service');
 const ApiError = require('../exceptions/api-error');
 const UserDto = require('../dtos/user-dto');
-const userModel = require('../models/user-model');
+const PassRequestModel = require('../models/password-request');
+const generatorPassword = require('generate-password');
+const getPeriodByString = require('../utils/getPeriodByString');
 
 class UserService {
   async registration(email, password, name = undefined) {
@@ -68,14 +70,65 @@ class UserService {
     const isTokenGood = tokenService.validateRefreshToken(refreshToken);
     if (!token || !isTokenGood) throw ApiError.UnauthorizedError();
     // 3. Get new data of the user and generate and save pair tokens
+    console.log(token);
     const user = await UserModel.findById(token.user);
     const userDto = new UserDto(user); // email, id, isActivated
     const tokens = await tokenService.generateAndSavePairTokens(userDto);
     return { ...tokens, user: userDto };
   }
 
+  async resetPassRequest(email, actorIp) {
+    // 1. Check if user exists
+    const applicant = await UserModel.findOne({ email });
+    if (!applicant) throw ApiError.BadRequest(`Пользователь с адресом ${email} не найден!`);
+    // 2. Generate activate password link
+    const actiovationPassLink = uuid.v4();
+    // 3. Create a new password request
+    await PassRequestModel.create({
+      user: applicant._id,
+      actiovationPassLink,
+      status: false,
+      datetime: +new Date(),
+      actor: actorIp
+    });
+    // 4. Send activate password link and new password to user email
+    await mailService.sendResetPasswordLinkMail(
+      applicant.email,
+      `${process.env.API_URL}${process.env.API_ROUTE}/resetpass/${actiovationPassLink}`,
+      actorIp);
+    return;
+  }
+
+  async updatePassword(actiovationPassLink) {
+    // 1. Check if link is good 
+    if (!actiovationPassLink) throw ApiError.BadRequest('Нет кода активации');
+    const passRequest = await PassRequestModel.findOne({ actiovationPassLink });
+    if (
+      !passRequest
+      || passRequest.status
+      || (passRequest.datetime + getPeriodByString(process.env.PSWD_REQUEST_PERIOD)) < +new Date()
+    ) {
+      throw ApiError.BadRequest('Невалидный код активации!');
+    }
+    // 2. Get user by pass request
+    const user = await UserModel.findById(passRequest.user);
+    if (!user) throw ApiError.BadRequest('Пользователь не найден!');
+    // 3. Generate and hash new password
+    const newPsswrd = generatorPassword.generate({ length: 10, numbers: true });
+    const hashPsswrd = await bcrypt.hash(newPsswrd, +process.env.PSWD_HASH_SALT);
+    // 4. Send updated password
+    await mailService.sendNewPasswordMail(user.email, newPsswrd);
+    // 5. Update user password
+    user.password = hashPsswrd;
+    await user.save();
+    // 6. Update pass request
+    passRequest.status = true;
+    await passRequest.save();
+    return user;
+  }
+
   async getAllUsers() {
-    return await userModel.find();
+    return await UserModel.find({}, '_id email isActivated access name');
   }
 
 }

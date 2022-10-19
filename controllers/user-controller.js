@@ -78,6 +78,35 @@ class UserController {
       next(e);
     }
   }
+  
+  async remember(req, res, next) {
+    try {
+      // Validate request
+      const errorsValidate = validationResult(req);
+      if (!errorsValidate.isEmpty()) throw ApiError.BadRequest('Неверные данные', errorsValidate);
+      // 1. Get request params by request body
+      const { email, password } = req.body;
+      // 2. Generate and send a new password
+      await userService.resetPassRequest(email, req.headers['x-forwarded-for'] || req.socket.remoteAddress);
+      // 3. Save refresh token to cookie !Needed app.use(cookieParser());
+      return res.json();
+    } catch (e) {
+      next(e);
+    }
+  }
+
+  async resetPass(req, res, next) {
+    try {
+      // 1. Get actiovation pass link from request parameters
+      const link = req.params.link;
+      // 2. Update and send password by link
+      await userService.updatePassword(link);
+      // 3. Redirect user to client
+      return res.redirect(process.env.CLIENT_URL);
+    } catch (e) {
+      next(e);
+    }
+  }
 
   async getUsers(req, res, next) {
     try {

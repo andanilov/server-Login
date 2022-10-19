@@ -1,17 +1,17 @@
 module.exports = class UserDto {
   email;
-  id;
+  _id;
   isActivated;
   access;
   name;
 
-  constructor({ email, id, isActivated, access, name }) {
+  constructor({ email, _id, isActivated, access, name }) {
     [
       this.email,
-      this.id,
+      this._id,
       this.isActivated,
       this.access,
       this.name,
-    ] = [email, id, isActivated, access, name];
+    ] = [email, _id, isActivated, access, name];
   }
 }

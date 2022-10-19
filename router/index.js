@@ -29,7 +29,8 @@ router.get(
   userController.activate
 ); // activate account by link
 
-router.get('/refresh',
+router.get(
+  '/refresh',
   userController.refresh
 ); // get new couple tokens: access and refresh (if access died)
    
@@ -38,5 +39,15 @@ router.get(
   authMiddleware,
   userController.getUsers
 ); // private page - user list
+
+router.post(
+  '/remember',
+  body('email').isEmail(),  
+  userController.remember
+);
+router.get(
+  '/resetpass/:link',  
+  userController.resetPass
+);
 
 module.exports = router;
